@@ -1,0 +1,18 @@
+{
+  "name": "parse-file-ynk",
+  "version": "2.0.1",
+  "description": "parse csv and xl file for ynk qlik and save it to db after cleaning ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "FirasElkebsi",
+  "license": "ISC",
+  "dependencies": {
+    "csv-parser": "^3.2.0",
+    "dotenv": "^17.2.1",
+    "pg": "^8.16.3",
+    "sequelize": "^6.37.7",
+    "xlsx": "^0.18.5"
+  }
+}
