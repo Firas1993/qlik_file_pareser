@@ -2,11 +2,15 @@ const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
 const db_user = process.env.DB_USER;
-const db_pwd = process.env.DB_PWD;
-const db_dhost = process.env.DB_DHOST || 'localhost';
-const db_name = process.env.DB_NAME || 'default_db';
+const db_pwd = process.env.DB_PASSWORD;
+const db_dhost = process.env.DB_HOST ;
+const db_name = process.env.DB_NAME;
 const db_port = process.env.DB_PORT || 5432; // Default PostgreSQL port
 
+if (!db_user || !db_pwd || !db_dhost || !db_name) {
+  console.error('❌ Missing required database environment variables.');
+  process.exit(1);
+}
 
 console.log(`🔍 Connecting to:`);
 console.log(`- DB:      ${db_name}`);
