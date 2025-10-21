@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qlik File Parser - Frontend</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="file"]:focus, input[type="text"]:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        .success {
+            background-color: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        .file-info {
+            background-color: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .api-section {
+            margin-top: 40px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+        .endpoint {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .method {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        .post { background-color: #28a745; color: white; }
+        .get { background-color: #17a2b8; color: white; }
+        .delete { background-color: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗂️ Qlik File Parser</h1>
+        
+        <!-- Upload Form -->
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="file">Select CSV or Excel File:</label>
+                <input type="file" id="file" name="file" accept=".csv,.xlsx,.xls" required>
+                <div class="file-info">
+                    <strong>Supported formats:</strong> CSV (.csv), Excel (.xlsx, .xls)<br>
+                    <strong>Maximum file size:</strong> 50MB<br>
+                    <strong>Note:</strong> New upload will replace existing file.
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="tableName">Table Name:</label>
+                <input type="text" id="tableName" name="tableName" placeholder="Enter database table name" required>
+            </div>
+            
+            <button type="submit" id="submitBtn">Upload & Process File</button>
+            <button type="button" id="testApiBtn">Test API Connection</button>
+        </form>
+
+        <!-- Re-Process Button -->
+        <div id="reprocessSection" style="display: none; margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px;">
+            <h3>Re-process File</h3>
+            <p>Click the button below to re-process the uploaded file with the same table name:</p>
+            <button type="button" id="reprocessBtn">🔄 Re-process File</button>
+        </div>
+        
+        <div id="result"></div>
+        
+        <div class="api-section">
+            <h2>API Endpoints</h2>
+            
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <strong>/api/upload</strong> - Upload and process file
+                <p>Form data: file (multipart), tableName (string). File saved as 'uploaded_file.*'</p>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <strong>/api/reprocess</strong> - Re-process uploaded file with same table
+                <p>No parameters required. Uses existing file and original table name.</p>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <strong>/health</strong> - Health check
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <strong>/api/info</strong> - API information
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000';
+        
+        function showReprocessSection() {
+            document.getElementById('reprocessSection').style.display = 'block';
+        }
+        
+        function hideReprocessSection() {
+            document.getElementById('reprocessSection').style.display = 'none';
+        }
+        
+        // Upload form handler
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('file');
+            const tableNameInput = document.getElementById('tableName');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (!fileInput.files[0]) {
+                showResult('Please select a file', 'error');
+                return;
+            }
+            
+            if (!tableNameInput.value.trim()) {
+                showResult('Please enter a table name', 'error');
+                return;
+            }
+            
+            // Disable submit button and show loading
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            showResult('Uploading and processing file...', 'loading');
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                formData.append('tableName', tableNameInput.value.trim());
+                
+                const response = await fetch(`${API_BASE_URL}/api/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    showResult(`
+                        <strong>✅ File processed successfully!</strong><br>
+                        <strong>File:</strong> ${data.originalFileName} (${formatFileSize(data.fileSize)})<br>
+                        <strong>Table:</strong> ${data.tableName}<br>
+                        <strong>Batch ID:</strong> ${data.batchid}<br>
+                        <strong>Processed Rows:</strong> ${data.processedRows}<br>
+                        <strong>Faulty Rows:</strong> ${data.faultyRows}<br>
+                        <strong>Columns:</strong> ${data.columnNames.join(', ')}<br>
+                        ${data.faultFilePath ? `<strong>Fault File:</strong> ${data.faultFilePath}<br>` : ''}
+                    `, 'success');
+                    
+                    // Show re-process section
+                    showReprocessSection();
+                    
+                    // Clear form
+                    fileInput.value = '';
+                    tableNameInput.value = '';
+                    
+                } else {
+                    showResult(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Connection Error: ${error.message}`, 'error');
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upload & Process File';
+            }
+        });
+        
+        // Test API button
+        document.getElementById('testApiBtn').addEventListener('click', async () => {
+            showResult('Testing API connection...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/info`);
+                const result = await response.json();
+                
+                showResult(`
+                    <strong>✅ API Connection Successful!</strong><br>
+                    <strong>Service:</strong> ${result.name}<br>
+                    <strong>Version:</strong> ${result.version}<br>
+                    <strong>Description:</strong> ${result.description}<br>
+                    <strong>Supported Formats:</strong> ${result.supportedFormats.join(', ')}<br>
+                    <strong>Max File Size:</strong> ${result.maxFileSize}
+                `, 'success');
+            } catch (error) {
+                showResult(`❌ API Connection Failed: ${error.message}`, 'error');
+            }
+        });
+
+        // Re-process file button (no parameters needed)
+        document.getElementById('reprocessBtn').addEventListener('click', async () => {
+            const reprocessBtn = document.getElementById('reprocessBtn');
+            
+            reprocessBtn.disabled = true;
+            reprocessBtn.textContent = '🔄 Re-processing...';
+            showResult('Re-processing file with same table name...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/reprocess`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({}) // No parameters needed
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    showResult(`
+                        <strong>✅ File re-processed successfully!</strong><br>
+                        <strong>Table:</strong> ${data.tableName}<br>
+                        <strong>Batch ID:</strong> ${data.batchid}<br>
+                        <strong>Processed Rows:</strong> ${data.processedRows}<br>
+                        <strong>Faulty Rows:</strong> ${data.faultyRows}<br>
+                        <strong>Columns:</strong> ${data.columnNames.join(', ')}<br>
+                        ${data.faultFilePath ? `<strong>Fault File:</strong> ${data.faultFilePath}<br>` : ''}
+                    `, 'success');
+                } else {
+                    showResult(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Connection Error: ${error.message}`, 'error');
+            } finally {
+                reprocessBtn.disabled = false;
+                reprocessBtn.textContent = '🔄 Re-process File';
+            }
+        });
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
