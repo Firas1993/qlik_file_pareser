@@ -4,13 +4,17 @@
   "description": "parse csv and xl file for ynk qlik and save it to db after cleaning ",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "author": "FirasElkebsi",
   "license": "ISC",
   "dependencies": {
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.1",
+    "express": "^4.18.2",
+    "multer": "^2.0.0-alpha.6",
     "pg": "^8.16.3",
     "sequelize": "^6.37.7",
     "xlsx": "^0.18.5"
