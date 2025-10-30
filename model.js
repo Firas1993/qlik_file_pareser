@@ -97,14 +97,17 @@ async function createOrUpdateDynamicModel(sequelize, tableName, columns) {
         allowNull: true,
       };
     }
-
+    console.log(`📋 Model definition prepared for table "${tableName}" with columns: ${columns.join(', ')}`);
     const DynamicModel = sequelize.define(tableName, modelDefinition, {
       tableName,
       timestamps: false,
+      id:false,
     });
-
+    if(!columns.includes('id')){
+      DynamicModel.removeAttribute('id');
+    }
     // Sync the model (creates table if it doesn't exist)
-    await DynamicModel.sync();
+    await DynamicModel.sync({alter:true});
     
     if (!exists) {
       console.log(`✅ Created new table "${tableName}" with columns: ${columns.join(', ')}`);

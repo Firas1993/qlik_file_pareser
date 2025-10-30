@@ -29,6 +29,46 @@ app.use((req, res, next) => {
   }
 });
 
+// IP Logging Middleware - Log every request with IP and details
+app.use((req, res, next) => {
+  const clientIP = req.headers['x-forwarded-for'] || 
+                   req.headers['x-real-ip'] || 
+                   req.connection.remoteAddress || 
+                   req.socket.remoteAddress || 
+                   (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+                   req.ip;
+
+  const timestamp = new Date().toISOString();
+  const userAgent = req.headers['user-agent'] || 'Unknown';
+  const method = req.method;
+  const url = req.url;
+  const referer = req.headers['referer'] || 'Direct';
+  
+  // Clean IP (remove IPv6 wrapper if present)
+  const cleanIP = clientIP ? clientIP.replace(/^::ffff:/, '') : 'Unknown';
+  
+  // Log format: [TIMESTAMP] IP | METHOD URL | User-Agent | Referer
+  console.log(`🔍 [${timestamp}] IP: ${cleanIP} | ${method} ${url} | UA: ${userAgent.substring(0, 100)} | Ref: ${referer}`);
+  
+  // Also log to file if LOG_FILE is set in .env
+  if (process.env.LOG_FILE) {
+    const logEntry = `[${timestamp}] IP: ${cleanIP} | ${method} ${url} | UA: ${userAgent} | Ref: ${referer}\n`;
+    
+    // Create logs directory if it doesn't exist
+    const logDir = path.dirname(process.env.LOG_FILE);
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+    
+    // Append to log file
+    fs.appendFile(process.env.LOG_FILE, logEntry, (err) => {
+      if (err) console.error('❌ Error writing to log file:', err.message);
+    });
+  }
+  
+  next();
+});
+
 // Create uploads directory if it doesn't exist
 const uploadsDir = process.env.UPLOAD_DIR || './uploads';
 if (!fs.existsSync(uploadsDir)) {
