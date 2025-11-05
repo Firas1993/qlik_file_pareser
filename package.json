@@ -6,11 +6,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "execute-qlik-delta": "node execute_qlik_delta.js"
   },
   "author": "FirasElkebsi",
   "license": "ISC",
   "dependencies": {
+    "async": "^3.2.6",
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.1",
     "express": "^4.18.2",

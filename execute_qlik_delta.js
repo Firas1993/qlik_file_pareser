@@ -78,9 +78,10 @@ class QlikDeltaExecutor {
     const totalQueries = allQueries.length;
 
     return new Promise((resolve, reject) => {
-      async.eachOfLimit(allQueries, CONCURRENCY_LIMIT, async (queryData, index, callback) => {
-        try {
-          const result = await this.executeSingleQuery(queryData);
+      async.eachOfLimit(allQueries, CONCURRENCY_LIMIT, (queryData, index, callback) => {
+        // Execute the query and handle the callback properly
+        this.executeSingleQuery(queryData)
+          .then(result => {
           
           // Collect failed queries
           if (!result.success) {
@@ -97,12 +98,15 @@ class QlikDeltaExecutor {
             console.log(`� Progress: ${processedCount}/${totalQueries} (${progress}%) - Success: ${successCount}, Failed: ${this.failedQueries.length}`);
           }
           
+          // Call callback with no parameters to indicate success
           callback();
-        } catch (error) {
+        })
+        .catch(error => {
           // This should not happen as executeSingleQuery handles its own errors
           console.error(`❌ Unexpected error processing query ${index}:`, error.message);
+          // Call callback with error to indicate failure
           callback(error);
-        }
+        });
       }, (error) => {
         if (error) {
           reject(error);

@@ -1,0 +1,20 @@
+[
+  {
+    "invoice_line_id": "YKD-FR1-22100921-361788-37",
+    "success": false,
+    "error": "invalid input syntax for type integer: \"5-1\"",
+    "mdm_sql": "INSERT INTO mdm_invoice_qlik (type,quantity,client_id,invoice_id,unit_price,client_name,product_ref,invoice_date,product_name,yonka_entity,system_source,invoice_line_id,invoice_line_row,total_line_ordered,invoice_total_wo_tax,invoice_accounting_ref) VALUES ('invoice','1','89K016','22100921','44.47','KEROUANTON Dominique','RCT_QLIK','2022-03-14','Remise client tête Qlik','Yon-Ka France','qlik','YKD-FR1-22100921-361788-37','5-1','0','148.25','22100921') ON CONFLICT (invoice_line_id, invoice_line_row, invoice_date) DO UPDATE SET type = EXCLUDED.type,quantity = EXCLUDED.quantity,client_id = EXCLUDED.client_id,invoice_id = EXCLUDED.invoice_id,unit_price = EXCLUDED.unit_price,client_name = EXCLUDED.client_name,product_ref = EXCLUDED.product_ref,invoice_date = EXCLUDED.invoice_date,product_name = EXCLUDED.product_name,yonka_entity = EXCLUDED.yonka_entity,system_source = EXCLUDED.system_source,invoice_line_id = EXCLUDED.invoice_line_id,invoice_line_row = EXCLUDED.invoice_line_row,total_line_ordered = EXCLUDED.total_line_ordered,invoice_total_wo_tax = EXCLUDED.invoice_total_wo_tax,invoice_accounting_ref = EXCLUDED.invoice_accounting_ref RETURNING mdm_invoice_id;"
+  },
+  {
+    "invoice_line_id": "YKD-FR1-25100648-906825-52",
+    "success": false,
+    "error": "invalid input syntax for type integer: \"5-1\"",
+    "mdm_sql": "INSERT INTO mdm_invoice_qlik (type,quantity,client_id,invoice_id,unit_price,client_name,product_ref,invoice_date,product_name,yonka_entity,system_source,invoice_line_id,invoice_line_row,total_line_ordered,invoice_total_wo_tax,invoice_accounting_ref) VALUES ('invoice','1','89P043','25100648','24.46','MADAME CECILE VITTECOQ','RCT_QLIK','2025-03-10','Remise client tête Qlik','Yon-Ka France','qlik','YKD-FR1-25100648-906825-52','5-1','0','81.55','25100648') ON CONFLICT (invoice_line_id, invoice_line_row, invoice_date) DO UPDATE SET type = EXCLUDED.type,quantity = EXCLUDED.quantity,client_id = EXCLUDED.client_id,invoice_id = EXCLUDED.invoice_id,unit_price = EXCLUDED.unit_price,client_name = EXCLUDED.client_name,product_ref = EXCLUDED.product_ref,invoice_date = EXCLUDED.invoice_date,product_name = EXCLUDED.product_name,yonka_entity = EXCLUDED.yonka_entity,system_source = EXCLUDED.system_source,invoice_line_id = EXCLUDED.invoice_line_id,invoice_line_row = EXCLUDED.invoice_line_row,total_line_ordered = EXCLUDED.total_line_ordered,invoice_total_wo_tax = EXCLUDED.invoice_total_wo_tax,invoice_accounting_ref = EXCLUDED.invoice_accounting_ref RETURNING mdm_invoice_id;"
+  },
+  {
+    "invoice_line_id": "YKD-FR1-25100548-1037006-48",
+    "success": false,
+    "error": "invalid input syntax for type integer: \"5-1\"",
+    "mdm_sql": "INSERT INTO mdm_invoice_qlik (type,quantity,client_id,invoice_id,unit_price,client_name,product_ref,invoice_date,product_name,yonka_entity,system_source,invoice_line_id,invoice_line_row,total_line_ordered,invoice_total_wo_tax,invoice_accounting_ref) VALUES ('invoice','1','89P043','25100548','9.45','MADAME CECILE VITTECOQ','RCT_QLIK','2025-02-26','Remise client tête Qlik','Yon-Ka France','qlik','YKD-FR1-25100548-1037006-48','5-1','0','31.5','25100548') ON CONFLICT (invoice_line_id, invoice_line_row, invoice_date) DO UPDATE SET type = EXCLUDED.type,quantity = EXCLUDED.quantity,client_id = EXCLUDED.client_id,invoice_id = EXCLUDED.invoice_id,unit_price = EXCLUDED.unit_price,client_name = EXCLUDED.client_name,product_ref = EXCLUDED.product_ref,invoice_date = EXCLUDED.invoice_date,product_name = EXCLUDED.product_name,yonka_entity = EXCLUDED.yonka_entity,system_source = EXCLUDED.system_source,invoice_line_id = EXCLUDED.invoice_line_id,invoice_line_row = EXCLUDED.invoice_line_row,total_line_ordered = EXCLUDED.total_line_ordered,invoice_total_wo_tax = EXCLUDED.invoice_total_wo_tax,invoice_accounting_ref = EXCLUDED.invoice_accounting_ref RETURNING mdm_invoice_id;"
+  }
+]

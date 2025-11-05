@@ -108,7 +108,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 200 * 1024 * 1024 // 200MB limit
+    fileSize: 50 * 1024 * 1024 // 50MB limit
   }
 });
 
@@ -139,7 +139,7 @@ app.get('/api/info', (req, res) => {
       'GET /api/info': 'API information'
     },
     supportedFormats: ['.csv', '.xlsx'],
-    maxFileSize: '200MB'
+    maxFileSize: '50MB'
   });
 });
 
@@ -280,7 +280,7 @@ app.use((error, req, res, next) => {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
-        error: 'File too large. Maximum size is 200MB.'
+        error: 'File too large. Maximum size is 50MB.'
       });
     }
   }

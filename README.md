@@ -85,7 +85,7 @@ Get API information and available endpoints
   "description": "API for parsing CSV and Excel files and saving to database",
   "endpoints": { ... },
   "supportedFormats": [".csv", ".xlsx"],
-  "maxFileSize": "200MB"
+  "maxFileSize": "50MB"
 }
 ```
 
@@ -239,7 +239,7 @@ Tables are created dynamically based on file headers:
 
 ## Security Notes
 
-- File uploads are limited to 200MB
+- File uploads are limited to 50MB
 - Only CSV and Excel files are accepted
 - CORS is enabled for all origins (configure for production)
 - Uploaded files are automatically cleaned up after processing
