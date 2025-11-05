@@ -27,6 +27,7 @@ function connectDB(dbName) {
       dialect: 'postgres', // or 'mysql'
       logging: false, // Disable logging; default: console.log
       port: db_port,
+      // logging: console.log
   });
 }
 

@@ -158,6 +158,6 @@ console.log(`📊 Start Main code`);
     await sequelize.close();
     console.log('✅ Database connection closed.');
   } catch (err) {
-    console.error('❌ Error:', err.message);
+    console.error('❌ Error 161:', err);
   }
 })();
