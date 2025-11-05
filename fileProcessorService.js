@@ -122,7 +122,10 @@ class FileProcessorService {
       for (let i = 0; i < cleaned.length; i += 500) {
         console.log(`📦 Processing chunk ${Math.ceil(i / 500) + 1} of ${Math.ceil(cleaned.length / 500)}`);
         const chunk = cleaned.slice(i, i + 500);
-        await DataModel.bulkCreate(chunk);
+        await DataModel.bulkCreate(chunk, { 
+          ignoreDuplicates: true,
+          returning: true
+        });
       }
 
       console.log(`📥 Inserted ${cleaned.length} rows into "${tableName}"`);
