@@ -1,191 +1,132 @@
-# Multi-Website Scraper with Factory Pattern
+# Canadian Store Locator Scraper - Clean Architecture
 
-A flexible, extensible web scraping framework that uses the factory pattern to handle multiple websites with different scraping requirements.
+## 🏗️ **Why Simple Selectors Instead of Multiple Fallbacks?**
 
-## 🏗️ Architecture
+You asked an excellent question! We changed from multiple selectors to exact IDs because:
 
-The system is built using the factory pattern with these key components:
-
-### 1. **BaseScraper** (Abstract Base Class)
-- Defines the common interface all scrapers must implement
-- Provides shared functionality (driver setup, CSV saving, cleanup)
-- Forces implementation of `scrape()` and `get_fieldnames()` methods
-
-### 2. **ScraperFactory**
-- Creates appropriate scraper instances based on website identifiers
-- Maintains a registry of available scrapers
-- Supports dynamic registration of new scrapers
-
-### 3. **MainScraper** (Orchestrator)
-- Manages the execution workflow across multiple websites
-- Uses factory to get appropriate scraper instances
-- Provides comprehensive reporting and error handling
-
-### 4. **Individual Scrapers**
-- Each website has its own scraper class extending `BaseScraper`
-- Implements website-specific scraping logic
-- Defines custom CSV field structure
-
-## 📁 File Structure
-
-```
-scraper/
-├── base_scraper.py         # Abstract base class
-├── scraper_factory.py      # Factory pattern implementation  
-├── main_scraper.py         # Main execution orchestrator
-├── gmcollin_scraper.py     # GM Collin spa scraper
-├── example_scraper.py      # Example scraper template
-├── test_factory.py         # Factory pattern testing
-└── README.md              # This documentation
-```
-
-## 🚀 Usage
-
-### Basic Usage
+### **Before** (Multiple Selectors):
 ```python
-from main_scraper import MainScraper
-
-# Create and run scraper for all configured websites
-scraper = MainScraper()
-results = scraper.run_all_scrapers()
-```
-
-### Adding/Removing Websites
-```python
-scraper = MainScraper()
-
-# Add a website to scrape
-scraper.add_website("example.com")
-
-# Remove a website 
-scraper.remove_website("unwanted-site.com")
-
-# Run scraping
-results = scraper.run_all_scrapers()
-```
-
-### Using Factory Directly
-```python
-from scraper_factory import ScraperFactory
-
-# Create a specific scraper
-scraper = ScraperFactory.create_scraper("gmcollin.ca")
-if scraper:
-    results = scraper.run()
-```
-
-## 🔧 Adding a New Scraper
-
-To add support for a new website:
-
-### 1. Create Scraper Class
-```python
-from base_scraper import BaseScraper
-
-class YourScraper(BaseScraper):
-    def __init__(self):
-        super().__init__(
-            website_name="yoursite_com", 
-            base_url="https://yoursite.com"
-        )
-    
-    def get_fieldnames(self):
-        return ["Name", "Address", "Phone"]
-    
-    def scrape(self):
-        # Your scraping logic here
-        locations = []
-        # ... scraping implementation ...
-        return locations
-```
-
-### 2. Register with Factory
-```python
-from scraper_factory import ScraperFactory
-from your_scraper import YourScraper
-
-ScraperFactory.register_scraper("yoursite.com", YourScraper)
-```
-
-### 3. Add to Main Scraper List
-```python
-# In main_scraper.py
-self.websites_to_scrape = [
-    "gmcollin.ca",
-    "yoursite.com",  # Add here
+'search_button': [
+    "button[type='submit']", 
+    "input[type='submit']", 
+    ".search-button", 
+    ".btn-search",
+    "button.btn",
+    ".btn",
+    "button"
 ]
 ```
 
-## 📊 Output
-
-Each scraper generates:
-- **CSV file**: Named as `website_name.csv` (dots replaced with underscores)
-- **Console logs**: Detailed progress and error reporting
-- **Summary report**: Statistics and results overview
-
-## 🛠️ Features
-
-### Error Handling
-- Graceful handling of website failures
-- Continuation of scraping even if one site fails
-- Detailed error logging and reporting
-
-### Extensibility
-- Easy addition of new scrapers
-- Factory pattern allows runtime scraper registration
-- Common functionality shared through base class
-
-### Flexibility
-- Each scraper can define its own field structure
-- Website-specific configuration and logic
-- Support for different scraping approaches (Selenium, requests, etc.)
-
-### Data Management
-- Automatic CSV generation with proper headers
-- Filename sanitization (dots → underscores)
-- Future support for data cleaning and filtering
-
-## 🧪 Testing
-
-Run the factory pattern tests:
-```bash
-python3 test_factory.py
+### **After** (Exact ID):
+```python
+search_button_id = "submitBtn"  # Exact ID
 ```
 
-Test with example scraper:
-```bash
-python3 example_scraper.py
+## ✅ **Benefits of Exact Selectors:**
+
+1. **Faster execution** - No need to try multiple selectors
+2. **More reliable** - Direct targeting of known elements
+3. **Cleaner code** - Less complexity and better readability
+4. **Predictable behavior** - Same websites, same structure
+
+## 📁 **Cleaned Project Structure**
+
+```
+scraper/
+├── main_scraper.py           # Main execution
+├── scraper_factory.py        # Factory pattern
+├── output/                   # CSV files go here
+├── test/                     # Test files
+│   └── test_structure.py
+├── common/                   # Shared components
+│   ├── base_scraper.py
+│   └── canadian_store_scraper.py  # Generic scraper with defaults
+└── websites/                 # Specific implementations
+    ├── gmcollin_scraper.py
+    └── ykcanada_scraper.py
 ```
 
-## 📋 Current Scrapers
+## 🎯 **Default Selectors for Both Websites**
 
-| Website | Scraper Class | Status | Locations |
-|---------|---------------|--------|-----------|
-| gmcollin.ca | GMCollinScraper | ✅ Active | Spa locations across Canada |
-| example.com | ExampleScraper | 📝 Demo | Example implementation |
+| Element | ID/Selector | Usage |
+|---------|-------------|-------|
+| Search Input | `address_search` | Where to type postal codes |
+| Submit Button | `submitBtn` | Triggers the search |
+| Pagination Select | `limit` | Changes results from 10 to 100 |
 
-## 🔮 Future Enhancements
+## 🌍 **Postal Code Constants**
 
-- Data cleaning and validation pipeline
-- Database storage support
-- Configurable output formats (JSON, XML)
-- Scheduling and automation
-- Rate limiting and respectful crawling
-- Proxy rotation support
-- Advanced error recovery
+```python
+POSTAL_CODE_PREFIXES = {
+    'canada': [
+        "H7N",  # Montreal/Laval area, QC
+        "M5V",  # Toronto area, ON
+        "K1A",  # Ottawa area, ON
+        "T2P",  # Calgary area, AB
+        "V6B",  # Vancouver area, BC
+        "R3C",  # Winnipeg area, MB
+        "S7K",  # Saskatoon area, SK
+        "B3H",  # Halifax area, NS
+        "A1A",  # St. John's area, NL
+        "Y1A"   # Whitehorse area, YT
+    ],
+    'usa': [
+        "10001", # New York, NY
+        "90210", # Beverly Hills, CA
+        "60601", # Chicago, IL
+        # ... more US zip codes
+    ]
+    # Easy to add more countries in the future
+}
+```
 
-## 🤝 Contributing
+## 🚀 **How to Use**
 
-To add a new scraper:
-1. Create scraper class extending `BaseScraper`
-2. Implement required methods (`scrape()`, `get_fieldnames()`)
-3. Register with factory
-4. Add to main scraper list
-5. Test thoroughly
+### **Run Both Websites:**
+```bash
+cd scraper
+python3 main_scraper.py
+```
 
-## 📝 Notes
+### **Add New Website:**
+1. Create new scraper class in `websites/`
+2. Extend `StoreLocatorScraper`
+3. Provide URL and any custom selectors (or use defaults)
+4. Register in `scraper_factory.py`
 
-- All scrapers automatically get Chrome WebDriver setup
-- CSV output uses UTF-8 encoding
-- Browser runs in headless mode by default
-- Respects website load times with appropriate delays
+### **Example - New Website:**
+```python
+class NewWebsiteScraper(StoreLocatorScraper):
+    def __init__(self):
+        super().__init__(
+            website_name="newsite_com",
+            base_url="https://newsite.com/store-locator/",
+            # Uses defaults: address_search, submitBtn, limit
+            country="canada"  # or "usa"
+        )
+```
+
+## � **Target Websites**
+
+- ✅ **GM Collin**: `https://www.gmcollin.ca/apps/store-locator/`
+- ✅ **YK Canada**: `https://ykcanada.com/apps/store-locator/`
+
+## 🎉 **Key Benefits**
+
+1. **Clean & Focused**: Removed unused files (Shoppers, examples)
+2. **Organized Output**: All CSV files go to `output/` folder
+3. **Exact Selectors**: No guessing - use known IDs
+4. **Extensible**: Easy to add new countries and websites
+5. **Simple**: Default selectors work for both current websites
+6. **Maintainable**: Clear separation of concerns
+
+## 🔧 **Default Configuration**
+
+Both GM Collin and YK Canada use these exact same defaults:
+- **Search Input**: `id="address_search"`
+- **Submit Button**: `id="submitBtn"`  
+- **Pagination**: `id="limit"`
+- **Country**: Canada postal codes
+- **Output**: `output/` folder
+
+This makes adding similar websites extremely easy!

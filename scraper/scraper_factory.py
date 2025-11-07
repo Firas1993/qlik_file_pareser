@@ -1,94 +1,54 @@
 """
-Scraper factory that creates appropriate scraper instances based on website.
-Uses factory pattern to determine which scraper to instantiate.
+Focused scraper factory for GM Collin and YK Canada.
 """
 
 from typing import Dict, Type, Optional
-from base_scraper import BaseScraper
-from gmcollin_scraper import GMCollinScraper
+import sys
+import os
+
+# Add paths for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
+sys.path.append(os.path.join(current_dir, 'common'))
+sys.path.append(os.path.join(current_dir, 'websites'))
+
+from common.base_scraper import BaseScraper
+from websites.gmcollin_scraper import GMCollinScraper
+from websites.ykcanada_scraper import YKCanadaScraper
 
 
 class ScraperFactory:
-    """
-    Factory class for creating scraper instances.
-    Maps website identifiers to their corresponding scraper classes.
-    """
+    """Factory for creating GM Collin and YK Canada scrapers."""
     
     # Registry of available scrapers
     _scrapers: Dict[str, Type[BaseScraper]] = {
+        # GM Collin
         "gmcollin.ca": GMCollinScraper,
         "www.gmcollin.ca": GMCollinScraper,
-        "gmcollin_spas_ca": GMCollinScraper,
-        # Add more scrapers here as they are developed
-        # "example.com": ExampleScraper,
+        "gmcollin": GMCollinScraper,
+        
+        # YK Canada
+        "ykcanada.com": YKCanadaScraper,
+        "ykcanada": YKCanadaScraper,
+        "yk": YKCanadaScraper,
     }
     
     @classmethod
     def create_scraper(cls, website_identifier: str) -> Optional[BaseScraper]:
-        """
-        Create a scraper instance for the given website.
-        
-        Args:
-            website_identifier: Website domain, name, or identifier
-            
-        Returns:
-            Scraper instance or None if no matching scraper found
-        """
-        # Normalize the identifier
+        """Create a scraper for the given website."""
         identifier = website_identifier.lower().strip()
         
-        # Try exact match first
         if identifier in cls._scrapers:
-            scraper_class = cls._scrapers[identifier]
-            return scraper_class()
+            return cls._scrapers[identifier]()
         
-        # Try partial matching for domain names
-        for registered_identifier, scraper_class in cls._scrapers.items():
-            if identifier in registered_identifier or registered_identifier in identifier:
+        # Try partial matching
+        for registered_id, scraper_class in cls._scrapers.items():
+            if identifier in registered_id or registered_id in identifier:
                 return scraper_class()
         
-        # No matching scraper found
         return None
     
     @classmethod
-    def get_available_scrapers(cls) -> Dict[str, str]:
-        """
-        Get a dictionary of available scrapers and their descriptions.
-        
-        Returns:
-            Dictionary mapping identifiers to scraper descriptions
-        """
-        available = {}
-        for identifier, scraper_class in cls._scrapers.items():
-            # Get class name as description
-            class_name = scraper_class.__name__
-            available[identifier] = f"{class_name} - {scraper_class.__doc__ or 'No description'}"
-        
-        return available
-    
-    @classmethod
-    def register_scraper(cls, identifier: str, scraper_class: Type[BaseScraper]) -> None:
-        """
-        Register a new scraper class.
-        
-        Args:
-            identifier: Website identifier/domain
-            scraper_class: Scraper class that extends BaseScraper
-        """
-        if not issubclass(scraper_class, BaseScraper):
-            raise ValueError(f"Scraper class {scraper_class.__name__} must extend BaseScraper")
-        
-        cls._scrapers[identifier.lower().strip()] = scraper_class
-    
-    @classmethod
-    def is_supported(cls, website_identifier: str) -> bool:
-        """
-        Check if a website is supported by any registered scraper.
-        
-        Args:
-            website_identifier: Website domain, name, or identifier
-            
-        Returns:
-            True if supported, False otherwise
-        """
-        return cls.create_scraper(website_identifier) is not None
+    def get_available_websites(cls) -> list:
+        """Get list of supported websites."""
+        return ["gmcollin.ca", "ykcanada.com"]
