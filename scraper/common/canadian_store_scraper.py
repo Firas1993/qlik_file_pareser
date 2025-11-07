@@ -6,7 +6,7 @@ Uses exact selectors with defaults for GM Collin and YK Canada style websites.
 import time
 from typing import List, Dict, Any, Optional
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, UnexpectedAlertPresentException
 import os
@@ -55,6 +55,7 @@ class StoreLocatorScraper(BaseScraper):
                  search_input_id: str = "address_search",
                  search_button_id: str = "submitBtn", 
                  pagination_select_id: str = "limit",
+                 distance_select_id: str = "within_distance",
                  country: str = "canada"):
         """
         Initialize the store locator scraper with exact selectors.
@@ -65,6 +66,7 @@ class StoreLocatorScraper(BaseScraper):
             search_input_id: ID for search input (default: "address_search")
             search_button_id: ID for search button (default: "submitBtn")
             pagination_select_id: ID for pagination select (default: "limit")
+            distance_select_id: ID for distance limit select (default: "within_distance")
             country: Country for postal codes (default: "canada")
         """
         super().__init__(website_name, base_url)
@@ -76,12 +78,17 @@ class StoreLocatorScraper(BaseScraper):
         self.search_input_id = search_input_id
         self.search_button_id = search_button_id
         self.pagination_select_id = pagination_select_id
+        self.distance_select_id = distance_select_id
         
-        # Known selectors for this website style
+        # Known selectors for GM Collin/YK Canada style websites
         self.results_container_selector = ".addresses"
-        self.location_item_selector = ".address"
-        self.location_name_selector = ".name"
-        self.location_address_selector = ".address"
+        self.location_item_selector = "li"
+        self.location_name_selector = "h3.name"
+        self.location_address_selector = "span.address"
+        self.location_city_selector = "span.city"
+        self.location_province_selector = "span.prov_state"
+        self.location_postal_selector = "span.postal_zip"
+        self.location_country_selector = "span.country"
         
         # Postal code prefixes based on country
         self.country = country.lower()
@@ -94,41 +101,70 @@ class StoreLocatorScraper(BaseScraper):
             "Province_State", "Postal_Code", "Country", "Search_Zip"
         ]
     
-    def setup_pagination(self) -> bool:
+    def setup_pagination_and_distance(self) -> bool:
         """
-        Set up pagination to show 100 results instead of default 10.
+        Set up both pagination and distance limits for maximum results.
         
         Returns:
-            True if pagination was successfully modified, False otherwise
+            bool: True if setup was successful
         """
+        success = True
+        
+        # 1. Set distance limit to "No Limit" (value='0')
         try:
-            # Use exact ID for the pagination select
-            js_script = f"""
-            var selectElement = document.getElementById('{self.pagination_select_id}');
-            if (selectElement) {{
-                // Create option for 100 if it doesn't exist
-                var option100 = document.createElement('option');
-                option100.value = '100';
-                option100.text = '100';
-                selectElement.appendChild(option100);
-                selectElement.value = '100';
-                return true;
-            }} else {{
-                return false;
-            }}
+            distance_select_element = self.driver.find_element(By.ID, self.distance_select_id)
+            distance_select = Select(distance_select_element)
+            
+            # Get all available distance options
+            distance_options = [(opt.get_attribute('value'), opt.text) for opt in distance_select.options]
+            print(f"   Available distance options: {distance_options}")
+            
+            # Set to "No Limit" (value='0')
+            distance_select.select_by_value('0')
+            print(f"   ✅ Set distance limit to 'No Limit'")
+            
+            time.sleep(1)  # Wait for change to take effect
+            
+        except Exception as e:
+            print(f"   ⚠️ Could not set distance limit: {e}")
+            success = False
+        
+        # 2. Modify pagination limit value from 10 to 200
+        try:
+            # First, let's try to modify the option value directly using JavaScript
+            js_modify_pagination = """
+            var limitSelect = document.getElementById('limit');
+            if (limitSelect && limitSelect.options.length > 0) {
+                // Change the first (and likely only) option value from 10 to 200
+                limitSelect.options[0].value = '200';
+                limitSelect.options[0].text = '200';
+                return 'modified';
+            }
+            return 'not_found';
             """
             
-            result = self.driver.execute_script(js_script)
-            if result:
-                print("   ✅ Changed pagination limit from 10 to 100")
-                return True
-            else:
-                print(f"   ⚠️ Could not find pagination select element with ID: {self.pagination_select_id}")
-                return False
+            result = self.driver.execute_script(js_modify_pagination)
+            
+            if result == 'modified':
+                print(f"   ✅ Modified pagination option from '10' to '200'")
                 
+                # Now select the modified option
+                select_element = self.driver.find_element(By.ID, self.pagination_select_id)
+                select = Select(select_element)
+                select.select_by_value('200')
+                print(f"   ✅ Set pagination to 200 results")
+                
+            else:
+                print(f"   ⚠️ Could not modify pagination option")
+                success = False
+            
+            time.sleep(1)  # Wait for change to take effect
+            
         except Exception as e:
-            print(f"   ⚠️ Could not modify pagination: {e}")
-            return False
+            print(f"   ⚠️ Could not set pagination: {e}")
+            success = False
+        
+        return success
     
     def parse_address_components(self, full_address: str) -> Dict[str, str]:
         """
@@ -193,8 +229,8 @@ class StoreLocatorScraper(BaseScraper):
             )
             print("   Found search input field")
             
-            # Setup pagination
-            self.setup_pagination()
+            # Setup distance limit and pagination for maximum results
+            self.setup_pagination_and_distance()
             
             # Clear and enter the postal code
             search_input.clear()
@@ -242,8 +278,8 @@ class StoreLocatorScraper(BaseScraper):
                 print(f"   ⚠️ No results container found for {postal_code}")
                 return locations
             
-            # Get all location elements using exact selector
-            location_elements = self.driver.find_elements(By.CSS_SELECTOR, self.location_item_selector)
+            # Get all location elements using exact selector from container
+            location_elements = addresses_container.find_elements(By.CSS_SELECTOR, self.location_item_selector)
             
             if not location_elements:
                 print(f"   ⚠️ No location elements found for {postal_code}")
@@ -262,31 +298,57 @@ class StoreLocatorScraper(BaseScraper):
                         print(f"   ⚠️ Error extracting location {idx}: Could not find name element")
                         continue
                     
-                    # Get address using exact selector
+                    # Get individual address components using exact selectors
                     try:
-                        address_element = element.find_element(By.CSS_SELECTOR, self.location_address_selector)
-                        full_address = address_element.text.strip()
+                        street_element = element.find_element(By.CSS_SELECTOR, self.location_address_selector)
+                        street = street_element.text.strip()
                     except NoSuchElementException:
-                        print(f"   ⚠️ Error extracting location {idx}: Could not find address element")
+                        print(f"   ⚠️ Error extracting location {idx}: Could not find street address")
                         continue
                     
-                    if not name or not full_address:
+                    # Get city, province, postal code, and country
+                    try:
+                        city_element = element.find_element(By.CSS_SELECTOR, self.location_city_selector)
+                        city = city_element.text.strip()
+                    except NoSuchElementException:
+                        city = ""
+                    
+                    try:
+                        province_element = element.find_element(By.CSS_SELECTOR, self.location_province_selector)
+                        province = province_element.text.strip()
+                    except NoSuchElementException:
+                        province = ""
+                    
+                    try:
+                        postal_element = element.find_element(By.CSS_SELECTOR, self.location_postal_selector)
+                        postal_code_extracted = postal_element.text.strip()
+                    except NoSuchElementException:
+                        postal_code_extracted = ""
+                    
+                    try:
+                        country_element = element.find_element(By.CSS_SELECTOR, self.location_country_selector)
+                        country = country_element.text.strip()
+                    except NoSuchElementException:
+                        country = ""
+                    
+                    if not name or not street:
                         continue
                     
                     print(f"   ✅ Extracted: {name}")
                     
-                    # Parse address components
-                    address_components = self.parse_address_components(full_address)
+                    # Create full address string
+                    address_parts = [street, city, province, postal_code_extracted, country]
+                    full_address = ', '.join(part for part in address_parts if part)
                     
                     # Create location data
                     location_data = {
                         "Name": name,
                         "Address": full_address,
-                        "Street": address_components['street'],
-                        "City": address_components['city'],
-                        "Province_State": address_components['province'],
-                        "Postal_Code": address_components['postal_code'],
-                        "Country": address_components['country'],
+                        "Street": street,
+                        "City": city,
+                        "Province_State": province,
+                        "Postal_Code": postal_code_extracted,
+                        "Country": country,
                         "Search_Zip": postal_code
                     }
                     
