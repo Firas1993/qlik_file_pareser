@@ -21,18 +21,66 @@ class QlikDeltaExecutor {
   async fetchDeltaQueries() {
     try {
       console.log('📥 Fetching SQL queries from qlik_invoice_view_delta table...');
-      
       const [results] = await this.sequelize.query(`
         SELECT invoice_line_id, mdm_invoice_id, mdm_sql 
         FROM qlik_invoice_view_delta 
         WHERE mdm_sql IS NOT NULL AND mdm_sql != ''
         ORDER BY invoice_line_id
       `);
-
+   
       console.log(`✅ Found ${results.length} SQL queries to execute`);
       return results;
     } catch (error) {
       console.error('❌ Error fetching delta queries:', error.message);
+      throw error;
+    }
+  }
+  /**
+   * Refresh materialized view
+   * @returns {Promise<boolean>} True if successful, otherwise throws error
+   */
+  async refreshMaterializedView() {
+    try {
+      console.log('🔄 Refreshing materialized view qlik_invoice_view_filtered...');
+     await this.sequelize.query(`REFRESH MATERIALIZED VIEW qlik_invoice_view_filtered;`);
+      console.log('✅ Materialized view refreshed successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Error refreshing materialized view:', error.message);
+      throw error;
+    }
+  }
+
+  /*
+    * Safely delete changed invoice rows from mdm_invoice_qlik table
+    * by marking them as deleted in mdm_invoice_line_to_remove_qlik table
+    * @returns {Promise<boolean>} True if successful, otherwise throws error
+  */
+  async safeDeleteChangedInvoiceRows() {
+    try {
+      // the row to be deleted from mdm_invoice_qlik is all rows in mdm_invoice_line_to_remove_qlik
+      const [results] = await this.sequelize.query(`
+        SELECT mdm_invoice_id
+        FROM mdm_invoice_line_to_remove_qlik
+      `);
+      console.log('📥 Fetching rows to be deleted from mdm_invoice_qlik...  result ::');
+      console.log(results);
+      // set deleted_at to now for all rows in mdm_invoice_line_to_remove_qlik
+      console.log(`✅ Found ${results.length} rows to be deleted from mdm_invoice_qlik`);
+      if (results.length === 0) {
+        console.log('ℹ️  No rows to delete');
+        return true;
+      }
+      
+      await this.sequelize.query(`
+        UPDATE mdm_invoice_qlik
+        SET deleted_at = NOW()
+        WHERE mdm_invoice_id IN (${results.map(id => `'${id.mdm_invoice_id}'`).join(',')})
+      `);
+      console.log(`✅ Marked ${results.length} rows as deleted in mdm_invoice_line_to_remove_qlik`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error fetching rows to be deleted:', error.message);
       throw error;
     }
   }
@@ -130,8 +178,9 @@ class QlikDeltaExecutor {
       console.log('✅ Database connection established');
 
       // Fetch all queries
+     await this.refreshMaterializedView();
       const allQueries = await this.fetchDeltaQueries();
-
+     await this.safeDeleteChangedInvoiceRows();
       if (allQueries.length === 0) {
         console.log('ℹ️  No queries found to execute');
         return;
@@ -198,7 +247,13 @@ if (require.main === module) {
   const executor = new QlikDeltaExecutor();
   
   // Handle graceful shutdown
-  process.on('SIGINT', async () => {
+  // List all on event here and where it's triggred
+  const processEvent = {
+    SIGINT: 'SIGINT', // Ctrl+C
+    SIGTERM: 'SIGTERM' // Termination signal
+
+  }
+  process.on(processEvent.SIGINT, async () => {
     console.log('\n🛑 Received interrupt signal, shutting down gracefully...');
     await executor.sequelize.close();
     process.exit(0);
