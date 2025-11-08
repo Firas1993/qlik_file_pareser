@@ -34,7 +34,15 @@ scraper/
 
 ## 🚀 Quick Start
 
+### Prerequisites
+
+- **Python 3.7+** installed on your system
+- **Chrome browser** (latest version recommended)
+- **Internet connection**
+
 ### Installation
+
+#### 🐧 Linux/macOS
 
 1. **Automatic Installation** (Recommended):
    ```bash
@@ -47,16 +55,81 @@ scraper/
    pip3 install -r requirements.txt
    ```
 
+#### 🪟 Windows
+
+1. **Verify Python Installation**:
+   ```cmd
+   python --version
+   # or
+   python3 --version
+   ```
+   If Python is not installed, download from [python.org](https://www.python.org/downloads/windows/)
+
+2. **Install Dependencies**:
+   ```cmd
+   # Using Command Prompt
+   pip install -r requirements.txt
+   
+   # Or using PowerShell
+   python -m pip install -r requirements.txt
+   ```
+
+3. **Alternative with Virtual Environment** (Recommended):
+   ```cmd
+   # Create virtual environment
+   python -m venv scraper_env
+   
+   # Activate virtual environment
+   # For Command Prompt:
+   scraper_env\Scripts\activate
+   
+   # For PowerShell:
+   scraper_env\Scripts\Activate.ps1
+   
+   # Install dependencies
+   pip install -r requirements.txt
+   ```
+
 ### Running the Scraper
 
+#### 🐧 Linux/macOS
 ```bash
 # Run all scrapers (GM Collin + YK Canada)
 python3 main_scraper.py
 
-# Test individual scrapers
-python3 test_gmcollin.py
-python3 test_ykcanada.py
+# Test individual components
+python3 test/test_structure.py
 ```
+
+#### 🪟 Windows
+```cmd
+# Using Command Prompt or PowerShell
+python main_scraper.py
+
+# Test individual components
+python test/test_structure.py
+
+# If using virtual environment (activate first):
+scraper_env\Scripts\activate
+python main_scraper.py
+```
+
+### 🔧 Windows-Specific Setup Notes
+
+1. **Chrome Driver**: The `webdriver-manager` automatically downloads and manages ChromeDriver, no manual setup needed.
+
+2. **PATH Issues**: If you get "python is not recognized" error:
+   - Add Python to your Windows PATH during installation
+   - Or use full path: `C:\Python39\python.exe main_scraper.py`
+
+3. **Permission Issues**: Run Command Prompt as Administrator if you encounter permission errors.
+
+4. **PowerShell Execution Policy**: If scripts are blocked in PowerShell:
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+5. **Firewall/Antivirus**: Ensure Chrome and Python are allowed through Windows Firewall.
 
 ## 📋 Requirements
 
@@ -77,13 +150,14 @@ python3 test_ykcanada.py
 
 | Website | URL | Status | Locations Found |
 |---------|-----|--------|----------------|
-| **GM Collin** | `https://www.gmcollin.ca/apps/store-locator/` | ✅ Active | ~34 |
-| **YK Canada** | `https://ykcanada.com/apps/store-locator/` | ✅ Active | ~41 |
+| **GM Collin** | `https://www.gmcollin.ca/apps/store-locator/` | ✅ Active | ~418 |
+| **YK Canada** | `https://ykcanada.com/apps/store-locator/` | ✅ Active | ~237 |
 
 Both websites use identical HTML structure with exact selectors:
 - Search input: `#address_search`
 - Submit button: `#submitBtn` 
-- Pagination: `#limit`
+- Pagination: `#limit` (modified to 200 results)
+- Distance limit: `#within_distance` (set to "No Limit")
 - Results container: `.addresses`
 - Location items: `li`
 - Business name: `h3.name`
@@ -213,26 +287,110 @@ python3 debug_gmcollin.py       # GM Collin specific debugging
 
 ## 🛠️ Troubleshooting
 
-### Common Issues
+### Common Issues (All Platforms)
 
 **ChromeDriver errors**: 
 - Ensure Chrome browser is installed
 - `webdriver-manager` handles driver updates automatically
+- Restart terminal/command prompt after Chrome installation
 
 **No results found**:
 - Check if postal codes are valid for the region
-- Verify website accessibility
+- Verify website accessibility and internet connection
 - Review debug output for selector issues
 
 **Import errors**:
-- Run `pip3 install -r requirements.txt` 
+- Run `pip install -r requirements.txt` (Windows) or `pip3 install -r requirements.txt` (Linux/macOS)
 - Check Python version compatibility (3.7+)
+
+### 🪟 Windows-Specific Issues
+
+**"python is not recognized as an internal or external command"**:
+```cmd
+# Solution 1: Add Python to PATH during installation
+# Solution 2: Use full Python path
+C:\Python39\python.exe main_scraper.py
+
+# Solution 3: Use Python Launcher
+py main_scraper.py
+py -3 main_scraper.py
+```
+
+**"Access is denied" or Permission errors**:
+```cmd
+# Run Command Prompt as Administrator
+# Or install to user directory:
+pip install --user -r requirements.txt
+```
+
+**PowerShell script execution blocked**:
+```powershell
+# Allow script execution for current user
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Or bypass for single command
+powershell -ExecutionPolicy Bypass -File script.ps1
+```
+
+**SSL Certificate errors**:
+```cmd
+# Upgrade pip and certificates
+python -m pip install --upgrade pip
+pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org -r requirements.txt
+```
+
+**Chrome not found errors on Windows**:
+- Install Google Chrome from [chrome.google.com](https://www.google.com/chrome/)
+- Restart command prompt after installation
+- Check Chrome installation path: `C:\Program Files\Google\Chrome\Application\chrome.exe`
+
+**Virtual environment issues**:
+```cmd
+# Create new virtual environment
+python -m venv --clear scraper_env
+
+# Activate (Command Prompt)
+scraper_env\Scripts\activate.bat
+
+# Activate (PowerShell)
+scraper_env\Scripts\Activate.ps1
+
+# Deactivate when done
+deactivate
+```
+
+**Windows Defender/Antivirus blocking**:
+- Add Python installation folder to antivirus exceptions
+- Add project folder to antivirus exceptions
+- Temporarily disable real-time protection during installation
+
+### 🐧 Linux/macOS-Specific Issues
+
+**Permission denied for install.sh**:
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+**pip3 not found**:
+```bash
+# Install pip for Python 3
+sudo apt-get install python3-pip  # Ubuntu/Debian
+brew install python3              # macOS with Homebrew
+```
 
 ### Debug Mode
 
-Enable detailed logging by running individual test files:
+Enable detailed logging by running test files:
+
+**Windows**:
+```cmd
+python test/test_structure.py
+```
+
+**Linux/macOS**:
 ```bash
-python3 test_gmcollin.py    # See detailed extraction process
+python3 test/test_structure.py
 ```
 
 ## 📝 License

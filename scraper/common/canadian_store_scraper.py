@@ -351,6 +351,15 @@ class StoreLocatorScraper(BaseScraper):
                         "Country": country,
                         "Search_Zip": postal_code
                     }
+                    # fetch in google maps api the phone number and website and reviews if possible
+                  #  phone = self.get_phone_number_via_google_maps(name, street, city, province, postal_code_extracted, country)
+                  #  location_data["Phone"] = phone
+                  #  website = self.get_website_via_google_maps(name, street, city, province, postal_code_extracted, country)
+                  #  location_data["Website"] = website
+                  #  reviews_nbr = self.get_number_of_reviews_via_google_maps(name, street, city, province, postal_code_extracted, country)
+                  #  location_data["Reviews"] = reviews_nbr
+                  #  rating = self.get_rating_via_google_maps(name, street, city, province, postal_code_extracted, country)
+                  #  location_data["Rating"] = rating
                     
                     locations.append(location_data)
                     

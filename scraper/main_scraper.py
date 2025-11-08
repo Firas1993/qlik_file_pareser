@@ -17,7 +17,7 @@ class MainScraper:
         """Initialize with GM Collin and YK Canada websites."""
         self.websites_to_scrape = [
             "gmcollin.ca",
-            "ykcanada.com"
+            "ykcanada.com".  # add any new target websites here
         ]
         self.results = []
         self.factory = ScraperFactory()
@@ -100,6 +100,7 @@ class MainScraper:
             print(f"\n📍 Processing {idx}/{len(self.websites_to_scrape)}: {website}")
             
             result = self.scrape_website(website)
+            # here go throw the result and find the phone number and the websites and reviews if possible.
             self.results.append(result)
             
             # Add delay between websites

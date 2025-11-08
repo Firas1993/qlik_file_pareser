@@ -19,7 +19,7 @@ from websites.ykcanada_scraper import YKCanadaScraper
 
 class ScraperFactory:
     """Factory for creating GM Collin and YK Canada scrapers."""
-    
+
     # Registry of available scrapers
     _scrapers: Dict[str, Type[BaseScraper]] = {
         # GM Collin
