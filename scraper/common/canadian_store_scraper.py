@@ -10,8 +10,13 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, UnexpectedAlertPresentException
 import os
+import sys
 
 from common.base_scraper import BaseScraper
+
+# Add services directory to path for phone extractor
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'services'))
+from phone_extractor import GoogleMapsPhoneExtractor
 
 
 # Postal code prefixes for different countries - extensible for future use
@@ -56,7 +61,8 @@ class StoreLocatorScraper(BaseScraper):
                  search_button_id: str = "submitBtn", 
                  pagination_select_id: str = "limit",
                  distance_select_id: str = "within_distance",
-                 country: str = "canada"):
+                 country: str = "canada",
+                 enable_phone_extraction: bool = True):
         """
         Initialize the store locator scraper with exact selectors.
         
@@ -68,6 +74,7 @@ class StoreLocatorScraper(BaseScraper):
             pagination_select_id: ID for pagination select (default: "limit")
             distance_select_id: ID for distance limit select (default: "within_distance")
             country: Country for postal codes (default: "canada")
+            enable_phone_extraction: Whether to extract phone numbers (default: True)
         """
         super().__init__(website_name, base_url)
         
@@ -93,13 +100,30 @@ class StoreLocatorScraper(BaseScraper):
         # Postal code prefixes based on country
         self.country = country.lower()
         self.postal_prefixes = POSTAL_CODE_PREFIXES.get(self.country, POSTAL_CODE_PREFIXES['canada'])
+        
+        # Phone extraction setup
+        self.enable_phone_extraction = enable_phone_extraction
+        self.phone_extractor = None
+        if self.enable_phone_extraction:
+            try:
+                self.phone_extractor = GoogleMapsPhoneExtractor(headless=True, delay_range=(1, 2))
+                self.phone_extractor.setup_driver()
+                print("📞 Phone extraction enabled")
+            except Exception as e:
+                print(f"⚠️ Phone extraction disabled due to error: {e}")
+                self.enable_phone_extraction = False
     
     def get_fieldnames(self) -> List[str]:
         """Get CSV column names."""
-        return [
+        base_fields = [
             "Name", "Address", "Street", "City", 
             "Province_State", "Postal_Code", "Country", "Search_Zip"
         ]
+        
+        if self.enable_phone_extraction:
+            base_fields.append("Phone")
+            
+        return base_fields
     
     def setup_pagination_and_distance(self) -> bool:
         """
@@ -165,6 +189,35 @@ class StoreLocatorScraper(BaseScraper):
             success = False
         
         return success
+    
+    def get_phone_number(self, business_name: str, address: str) -> Optional[str]:
+        """
+        Extract phone number for a business using Google Maps
+        
+        Args:
+            business_name: Name of the business
+            address: Full address string
+            
+        Returns:
+            Phone number string or None if not found
+        """
+        if not self.enable_phone_extraction or not self.phone_extractor:
+            return None
+            
+        try:
+            print(f"   📞 Getting phone for: {business_name}")
+            phone = self.phone_extractor.search_google_maps(business_name, address)
+            
+            if phone:
+                print(f"   ✅ Found phone: {phone}")
+            else:
+                print(f"   ⚠️ No phone found")
+                
+            return phone
+            
+        except Exception as e:
+            print(f"   ❌ Error getting phone for {business_name}: {e}")
+            return None
     
     def parse_address_components(self, full_address: str) -> Dict[str, str]:
         """
@@ -351,15 +404,11 @@ class StoreLocatorScraper(BaseScraper):
                         "Country": country,
                         "Search_Zip": postal_code
                     }
-                    # fetch in google maps api the phone number and website and reviews if possible
-                  #  phone = self.get_phone_number_via_google_maps(name, street, city, province, postal_code_extracted, country)
-                  #  location_data["Phone"] = phone
-                  #  website = self.get_website_via_google_maps(name, street, city, province, postal_code_extracted, country)
-                  #  location_data["Website"] = website
-                  #  reviews_nbr = self.get_number_of_reviews_via_google_maps(name, street, city, province, postal_code_extracted, country)
-                  #  location_data["Reviews"] = reviews_nbr
-                  #  rating = self.get_rating_via_google_maps(name, street, city, province, postal_code_extracted, country)
-                  #  location_data["Rating"] = rating
+                    
+                    # Get phone number using Google Maps if enabled
+                    if self.enable_phone_extraction:
+                        phone = self.get_phone_number(name, full_address)
+                        location_data["Phone"] = phone
                     
                     locations.append(location_data)
                     
@@ -404,3 +453,11 @@ class StoreLocatorScraper(BaseScraper):
         print(f"\n✅ Extracted {len(all_locations)} unique location entries")
         
         return all_locations
+    
+    def cleanup(self):
+        """Clean up resources"""
+        super().cleanup()
+        
+        if self.phone_extractor:
+            self.phone_extractor.cleanup()
+            print("📞 Phone extractor cleaned up")

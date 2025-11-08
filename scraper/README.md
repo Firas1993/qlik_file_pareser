@@ -2,15 +2,16 @@
 
 A professional factory pattern-based web scraper designed for Canadian retail store locators, specifically optimized for GM Collin and YK Canada websites.
 
-## 🎯 Features
+## ✨ Features
 
-- **Factory Pattern Architecture**: Clean, extensible design for multiple websites
-- **Exact Selectors**: Uses precise element targeting for reliable data extraction  
-- **Canadian Postal Code Coverage**: Covers major Canadian regions with strategic postal codes
-- **Duplicate Management**: Intelligent deduplication based on name and location
-- **CSV Export**: Clean, structured output with comprehensive location data
-- **Error Handling**: Robust error handling with detailed logging
-- **Browser Automation**: Selenium-based automation with Chrome WebDriver
+- **🏭 Factory Pattern Architecture**: Extensible design for multiple store locators
+- **📍 Enhanced Location Extraction**: Optimized for maximum results (655+ locations)
+- **📞 Integrated Phone Number Extraction**: Get phone numbers from Google Maps during scraping
+- **🔄 Intelligent Pagination**: Modified to 200 results per page for comprehensive coverage
+- **🎯 Distance Control**: Set to "No Limit" for maximum geographic coverage
+- **🍁 Canadian Focus**: Optimized for Canadian postal codes and address formats
+- **🖥️ Cross-Platform**: Supports Windows, Linux, and macOS
+- **📊 CSV Export**: Clean, structured data export with comprehensive location details
 
 ## 🏗️ Project Structure
 
@@ -18,16 +19,24 @@ A professional factory pattern-based web scraper designed for Canadian retail st
 scraper/
 ├── common/
 │   ├── base_scraper.py              # Base scraper functionality
-│   └── canadian_store_scraper.py    # Generic store locator scraper
+│   └── canadian_store_scraper.py    # Generic store locator scraper w/ phone integration
 ├── websites/
 │   ├── gmcollin_scraper.py          # GM Collin specific implementation  
 │   └── ykcanada_scraper.py          # YK Canada specific implementation
+├── services/
+│   ├── __init__.py                  # Services package
+│   └── phone_extractor.py           # Google Maps phone number extraction
 ├── test/
 │   └── test_structure.py            # Factory pattern validation tests
 ├── output/                          # Generated CSV files
-├── main_scraper.py                  # Main execution orchestrator
+├── main_scraper.py                  # Basic scraper (no phones)
+├── scrape_with_phones.py            # Enhanced scraper with phone extraction
+├── add_phone_numbers.py             # Add phones to existing CSV files
+├── demo_phone_extraction.py         # Phone extraction demo
+├── test_phone_extraction.py         # Phone validation tests
 ├── scraper_factory.py              # Website scraper factory
 ├── requirements.txt                 # Python dependencies
+```
 ├── install.sh                       # Installation script
 └── README.md                        # This file
 ```
@@ -94,23 +103,69 @@ scraper/
 
 #### 🐧 Linux/macOS
 ```bash
-# Run all scrapers (GM Collin + YK Canada)
+# Basic scraping (no phone numbers)
 python3 main_scraper.py
+
+# Enhanced scraping with phone numbers
+python3 scrape_with_phones.py
+
+# Add phones to existing CSV files
+python3 add_phone_numbers.py
 
 # Test individual components
 python3 test/test_structure.py
+
+# Demo phone extraction
+python3 demo_phone_extraction.py
 ```
 
 #### 🪟 Windows
 ```cmd
-# Using Command Prompt or PowerShell
+# Basic scraping (no phone numbers)
 python main_scraper.py
+
+# Enhanced scraping with phone numbers
+python scrape_with_phones.py
+
+# Add phones to existing CSV files
+python add_phone_numbers.py
 
 # Test individual components
 python test/test_structure.py
 
+# Demo phone extraction
+python demo_phone_extraction.py
+
 # If using virtual environment (activate first):
 scraper_env\Scripts\activate
+```
+
+### 📞 Phone Number Extraction
+
+The scraper now supports **phone number extraction** from Google Maps:
+
+#### **Method 1: Integrated Scraping** (Recommended)
+```bash
+python3 scrape_with_phones.py
+```
+- Extracts phone numbers **during** the scraping process
+- Avoids rate limits by spacing requests naturally
+- Creates CSV files with phone numbers included
+
+#### **Method 2: Post-Processing**
+```bash
+python3 add_phone_numbers.py
+```
+- Adds phone numbers to **existing** CSV files
+- Useful for enhancing previously scraped data
+- Allows processing subsets for testing
+
+#### **Phone Extraction Features:**
+- ✅ **No API key required** - uses web scraping
+- ✅ **Canadian format support** - (514) 555-1234
+- ✅ **Rate limit friendly** - configurable delays
+- ✅ **Multiple validation patterns** - handles various phone formats
+- ✅ **Headless browser option** - runs in background
 python main_scraper.py
 ```
 
