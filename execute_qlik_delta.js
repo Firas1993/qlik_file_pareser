@@ -179,7 +179,7 @@ class QlikDeltaExecutor {
 
       // Fetch all queries
       const allQueries = await this.fetchDeltaQueries();
-      //await this.safeDeleteChangedInvoiceRows();
+      await this.safeDeleteChangedInvoiceRows();
       if (allQueries.length === 0) {
         console.log('ℹ️  No queries found to execute');
         return;

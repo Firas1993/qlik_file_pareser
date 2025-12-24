@@ -6,18 +6,18 @@ const csv = require('csv-parser');
 const xlsx = require('xlsx');
 
 const { connectDB } = require('./db');
-const { createOrUpdateDynamicModel } = require('./model');
+const { createOrUpdateDynamicModel, runCustomQuery } = require('./model');
 
 const filePath = process.argv[2];
-let tableName = process.argv[3] 
+let tableName = process.argv[3]
 // throw error if tableName is not provided
 if (!tableName) {
   console.error('❌ Table name is required. Using default: "dynamic_table"');
-  
-    process.exit(1);
-  }
 
-  if (!filePath ) {
+  process.exit(1);
+}
+
+if (!filePath) {
   console.error('❌ Usage: node read-file-to-db.js <file_path> <db_name> [table_name]');
   process.exit(1);
 }
@@ -49,10 +49,10 @@ function readXLSX(filePath) {
   return xlsx.utils.sheet_to_json(sheet);
 }
 
-function cleanData(rawRows,batchid) {
+function cleanData(rawRows, batchid) {
   const cleaned = [];
   const faults = [];
-let i = 0;
+  let i = 0;
   for (const row of rawRows) {
     const newRow = {};
     let hasUndefined = false;
@@ -66,8 +66,8 @@ let i = 0;
       newRow[cleanedKey] = row[key];
       newRow.batchid = batchid; // Add batchid to each row
     }
-    if(i=0) console.log("final header is ", Object.keys(newRow))
-      i++
+    if (i = 0) console.log("final header is ", Object.keys(newRow))
+    i++
     if (hasUndefined) {
       faults.push(row);
     } else {
@@ -108,8 +108,8 @@ console.log(`📊 Start Main code`);
 (async () => {
   try {
     const rawData = ext === '.csv' ? await readCSV(filePath)
-                  : ext === '.xlsx' ? readXLSX(filePath)
-                  : null;
+      : ext === '.xlsx' ? readXLSX(filePath)
+        : null;
     console.log(`📊 Read ${rawData.length} rows from file.`);
     if (!rawData || rawData.length === 0) {
       console.error('❌ No data found in file.');
@@ -134,7 +134,9 @@ console.log(`📊 Start Main code`);
     //   console.error('error during dropping table')
     // }
     console.log('🔌 Connected to DB');
-
+    if (!cleaned?.length) {
+      console.warn('No cleaned data to insert. Exiting.');
+    }
     const columnNames = Object.keys(cleaned[0]);
     const DataModel = await createOrUpdateDynamicModel(sequelize, tableName, columnNames);
     console.log(`📋 Model ready for table "${tableName}" with columns: ${columnNames.join(', ')}`);
@@ -154,8 +156,13 @@ console.log(`📊 Start Main code`);
       fs.writeFileSync('json_file_fault.json', JSON.stringify(faults, null, 2));
       console.log('⚠️ Faulty rows saved to json_file_fault.json');
     }
-
-    await sequelize.close();
+    // Log here the count of the table qlik_invoice_view_delta
+    const DeltaModel = await runCustomQuery(sequelize, `SELECT COUNT(*) as count FROM qlik_invoice_view_delta;`);
+    const toBeDeletedCount = await runCustomQuery(sequelize, `SELECT COUNT(*) as count FROM mdm_invoice_line_to_remove_qlik;`);
+    console.log(`📊 mdm_invoice_line_to_remove_qlik row count: ${toBeDeletedCount.count}`);
+    console.log(`📊 qlik_invoice_view_delta row count: ${DeltaModel.count}`);
+    const count = await
+      await sequelize.close();
     console.log('✅ Database connection closed.');
   } catch (err) {
     console.error('❌ Error 161:', err);

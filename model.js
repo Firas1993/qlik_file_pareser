@@ -1,6 +1,22 @@
 const { DataTypes } = require('sequelize');
 
 /**
+ * Run Custom given SELECT query 
+ */
+async function runCustomQuery(sequelize, query, replacements = {}) {
+  try {
+    const [results] = await sequelize.query(query, {
+      replacements,
+      type: sequelize.QueryTypes.SELECT
+    });
+    
+    return results;
+  } catch (error) {
+    console.error(`❌ Error executing custom query: ${error.message}`);
+    throw error;
+  }
+}
+/**
  * Check if a table exists in the database
  */
 async function tableExists(sequelize, tableName) {
@@ -149,5 +165,6 @@ module.exports = {
   createOrUpdateDynamicModel,
   tableExists,
   getExistingColumns,
-  addMissingColumns
+  addMissingColumns,
+  runCustomQuery
 };
