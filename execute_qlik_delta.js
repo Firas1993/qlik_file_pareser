@@ -243,22 +243,63 @@ class QlikDeltaExecutor {
 
 // CLI execution
 if (require.main === module) {
+  // CLI mode flag: default 0 (run full execution). If 1 -> show counts only.
+  const modeFlag = parseInt(process.argv[2] ?? '0', 10) || 0;
   const executor = new QlikDeltaExecutor();
 
   // Handle graceful shutdown
-  // List all on event here and where it's triggred
   const processEvent = {
     SIGINT: 'SIGINT', // Ctrl+C
     SIGTERM: 'SIGTERM' // Termination signal
-
   }
+
   process.on(processEvent.SIGINT, async () => {
     console.log('\n🛑 Received interrupt signal, shutting down gracefully...');
-    await executor.sequelize.close();
+    try {
+      await executor.sequelize.close();
+    } catch (e) {
+      // ignore
+    }
     process.exit(0);
   });
 
-  // Execute the main function
+  // If modeFlag is 1, only show counts and grouped counts, then exit
+  if (modeFlag === 1) {
+    (async () => {
+      try {
+        console.log('🔎 Running in counts-only mode (mode=1)...');
+        await executor.sequelize.authenticate();
+        console.log('✅ Database connection established');
+
+        const [totalRows] = await executor.sequelize.query(`SELECT COUNT(*) as count FROM qlik_invoice_view_delta;`);
+        const totalCount = (Array.isArray(totalRows) && totalRows[0]) ? totalRows[0].count : (totalRows.count || 0);
+        console.log(`📊 qlik_invoice_view_delta row count: ${totalCount}`);
+
+        const [groupRows] = await executor.sequelize.query(
+          `SELECT client_yonka_entity as yonka_entity, COUNT(*) as count FROM qlik_invoice_view_delta GROUP BY client_yonka_entity ORDER BY yonka_entity;`
+        );
+
+        console.log('\n📊 qlik_invoice_view_delta counts grouped by yonka_entity:');
+        console.log('===============================================');
+        if (Array.isArray(groupRows) && groupRows.length > 0) {
+          groupRows.forEach(r => console.log(`- ${r.yonka_entity || 'NULL'}: ${r.count}`));
+        } else {
+          console.log('No rows returned for grouping.');
+        }
+
+        await executor.sequelize.close();
+        console.log('🔌 Database connection closed');
+        process.exit(0);
+      } catch (err) {
+        console.error('❌ Failed to fetch counts:', err.message);
+        try { await executor.sequelize.close(); } catch(e){}
+        process.exit(1);
+      }
+    })();
+    return;
+  }
+
+  // Execute the main function (default behavior)
   executor.execute()
     .then(() => {
       console.log('🎉 Execution completed successfully');
