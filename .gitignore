@@ -2,3 +2,4 @@
 /test_files
 .env
 /uploads
+output.csv
