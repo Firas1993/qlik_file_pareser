@@ -2,16 +2,21 @@ const { connectDB } = require('./db');
 require('dotenv').config();
 const async = require("async");
 
-const CONCURRENCY_LIMIT = 200;
+const CONCURRENCY_LIMIT = 500;
 
 /**
  * Execute SQL queries from qlik_invoice_view_delta table in batches
  * Handles failures and returns them with invoice_line_id
  */
 class QlikDeltaExecutor {
-  constructor() {
+  /**
+   * @param {Object} [options]
+   * @param {boolean} [options.safeDelete=true] - whether to run safeDeleteChangedInvoiceRows
+   */
+  constructor(options = {}) {
     this.sequelize = connectDB();
     this.failedQueries = [];
+    this.safeDelete = (typeof options.safeDelete === 'boolean') ? options.safeDelete : true;
   }
 
   /**
@@ -179,7 +184,13 @@ class QlikDeltaExecutor {
 
       // Fetch all queries
       const allQueries = await this.fetchDeltaQueries();
-      await this.safeDeleteChangedInvoiceRows();
+
+      // Conditionally perform safe delete of changed invoice rows
+      if (this.safeDelete) {
+        await this.safeDeleteChangedInvoiceRows();
+      } else {
+        console.log('ℹ️  safeDeleteChangedInvoiceRows is disabled by configuration');
+      }
       if (allQueries.length === 0) {
         console.log('ℹ️  No queries found to execute');
         return;
@@ -245,7 +256,9 @@ class QlikDeltaExecutor {
 if (require.main === module) {
   // CLI mode flag: default 0 (run full execution). If 1 -> show counts only.
   const modeFlag = parseInt(process.argv[2] ?? '0', 10) || 0;
-  const executor = new QlikDeltaExecutor();
+  // CLI safe-delete flag: default 1 (enabled). Pass 0 to disable safe delete.
+  const safeDeleteFlag = parseInt(process.argv[3] ?? '1', 10) || 0;
+  const executor = new QlikDeltaExecutor({ safeDelete: Boolean(safeDeleteFlag) });
 
   // Handle graceful shutdown
   const processEvent = {
