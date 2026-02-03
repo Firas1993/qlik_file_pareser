@@ -10,6 +10,7 @@ const { createOrUpdateDynamicModel, runCustomQuery } = require('./model');
 
 const filePath = process.argv[2];
 let tableName = process.argv[3]
+let batchid = process.argv[4] || getBatchId();
 // throw error if tableName is not provided
 if (!tableName) {
   console.error('❌ Table name is required. Using default: "dynamic_table"');
@@ -102,7 +103,6 @@ function getBatchId(periodicity_minutes = 5) {
 
   return batchid;
 }
-const batchid = getBatchId();
 
 console.log(`📊 Start Main code`);
 (async () => {
